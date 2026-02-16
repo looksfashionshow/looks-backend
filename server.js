@@ -6,11 +6,11 @@ require('dotenv').config();
 const app = express();
 
 // --- MIDDLEWARES ---
+// Isse replace karein
 app.use(cors({
-    // Netlify ka URL yahan allow kar rahe hain
-    origin: ["https://looksfashionshow.netlify.app", "http://localhost:5173"], 
+    origin: "*", 
     methods: ['GET', 'POST'],
-    credentials: true
+    allowedHeaders: ['Content-Type']
 })); 
 app.use(express.json()); 
 
