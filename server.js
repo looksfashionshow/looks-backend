@@ -6,9 +6,9 @@ require('dotenv').config();
 const app = express();
 
 // --- MIDDLEWARES ---
-// CORS update kiya hai taaki Netlify se request asani se aa sake
 app.use(cors({
-    origin: process.env.FRONTEND_URL || '*', // Deployment ke baad yahan Netlify ka URL daal dena
+    // Netlify ka URL yahan allow kar rahe hain
+    origin: ["https://looksfashionshow.netlify.app", "http://localhost:5173"], 
     methods: ['GET', 'POST'],
     credentials: true
 })); 
@@ -26,7 +26,7 @@ const Registration = mongoose.model('Registration', ModelRegistrationSchema);
 
 // --- ROUTES ---
 
-// Health Check Route (Render par deploy check karne ke liye)
+// Health Check Route
 app.get('/', (req, res) => {
     res.send("LOOKS S1 Backend is Active! 🚀");
 });
@@ -34,24 +34,39 @@ app.get('/', (req, res) => {
 // Registration API Route
 app.post('/api/register', async (req, res) => {
     try {
-        const newRegistration = new Registration(req.body);
+        const { fullName, email, whatsapp } = req.body;
+        
+        // Basic Validation
+        if (!fullName || !email || !whatsapp) {
+            return res.status(400).json({ error: "All fields are required!" });
+        }
+
+        const newRegistration = new Registration({ fullName, email, whatsapp });
         await newRegistration.save();
         res.status(201).json({ message: "Registration Successful!" });
     } catch (err) {
-        res.status(400).json({ error: "Registration Failed!", details: err.message });
+        console.error("Reg Error:", err);
+        res.status(500).json({ error: "Server Error!", details: err.message });
     }
 });
 
 // --- SERVER & DB CONNECTION ---
 const PORT = process.env.PORT || 5000;
-// Render par deploy karte waqt MONGO_URI Environment Variable mein daalna
 const MONGO_URI = process.env.MONGO_URI; 
+
+if (!MONGO_URI) {
+    console.error("❌ Error: MONGO_URI is not defined in Environment Variables!");
+    process.exit(1);
+}
 
 mongoose.set('strictQuery', false); 
 
 mongoose.connect(MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB Connected Successfully");
+    // App listen connect ke baad hi hona chahiye
     app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
   })
-  .catch(err => console.log("❌ DB Connection Error:", err));
+  .catch(err => {
+    console.log("❌ DB Connection Error:", err.message);
+  });
